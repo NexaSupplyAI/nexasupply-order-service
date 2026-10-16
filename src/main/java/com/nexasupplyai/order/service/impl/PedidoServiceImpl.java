@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,6 +37,7 @@ public class PedidoServiceImpl implements PedidoServiceInterface {
     @Transactional
     public PedidoResponse crear(PedidoRequest request) {
         validarNumeroUnico(request.numeroPedido(), null);
+        validarTotal(request);
         return pedidoMapper.aResponse(pedidoRepository.save(pedidoMapper.aEntidad(request)));
     }
 
@@ -43,6 +45,7 @@ public class PedidoServiceImpl implements PedidoServiceInterface {
     public PedidoResponse actualizar(UUID id, PedidoRequest request) {
         Pedido pedido = buscarEntidad(id);
         validarNumeroUnico(request.numeroPedido(), id);
+        validarTotal(request);
         pedidoMapper.actualizarEntidad(request, pedido);
         return pedidoMapper.aResponse(pedidoRepository.save(pedido));
     }
@@ -61,5 +64,18 @@ public class PedidoServiceImpl implements PedidoServiceInterface {
         pedidoRepository.findByNumeroPedido(numeroPedido)
                 .filter(pedido -> !pedido.getId().equals(idActual))
                 .ifPresent(pedido -> { throw new IllegalArgumentException("El número de pedido ya existe"); });
+    }
+
+    private void validarTotal(PedidoRequest request) {
+        BigDecimal totalCalculado = request.subtotal()
+                .add(request.montoImpuesto())
+                .add(request.montoEnvio())
+                .subtract(request.montoDescuento());
+        if (request.montoDescuento().compareTo(request.subtotal().add(request.montoImpuesto())) > 0) {
+            throw new IllegalArgumentException("El descuento no puede superar el subtotal más impuestos");
+        }
+        if (totalCalculado.compareTo(request.montoTotal()) != 0) {
+            throw new IllegalArgumentException("El total no coincide con subtotal + impuestos + envío - descuento");
+        }
     }
 }
