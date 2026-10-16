@@ -4,10 +4,10 @@ import com.nexasupplyai.order.dto.request.PedidoRequest;
 import com.nexasupplyai.order.dto.response.PedidoResponse;
 import com.nexasupplyai.order.entity.Pedido;
 import com.nexasupplyai.order.enums.EstadoPedido;
+import com.nexasupplyai.order.exception.PedidoNoEncontradoException;
 import com.nexasupplyai.order.mapper.PedidoMapper;
 import com.nexasupplyai.order.repository.PedidoRepository;
 import com.nexasupplyai.order.service.interfaces.PedidoServiceInterface;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +54,7 @@ public class PedidoServiceImpl implements PedidoServiceInterface {
 
     private Pedido buscarEntidad(UUID id) {
         return pedidoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Pedido no encontrado: " + id));
+                .orElseThrow(() -> new PedidoNoEncontradoException(id));
     }
 
     private void validarNumeroUnico(String numeroPedido, UUID idActual) {

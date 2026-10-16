@@ -4,11 +4,12 @@ import com.nexasupplyai.order.dto.request.DetallePedidoRequest;
 import com.nexasupplyai.order.dto.response.DetallePedidoResponse;
 import com.nexasupplyai.order.entity.DetallePedido;
 import com.nexasupplyai.order.entity.Pedido;
+import com.nexasupplyai.order.exception.DetallePedidoNoEncontradoException;
+import com.nexasupplyai.order.exception.PedidoNoEncontradoException;
 import com.nexasupplyai.order.mapper.DetallePedidoMapper;
 import com.nexasupplyai.order.repository.DetallePedidoRepository;
 import com.nexasupplyai.order.repository.PedidoRepository;
 import com.nexasupplyai.order.service.interfaces.DetallePedidoServiceInterface;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,11 +72,11 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
 
     private DetallePedido buscarEntidad(UUID id) {
         return detallePedidoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Detalle de pedido no encontrado: " + id));
+                .orElseThrow(() -> new DetallePedidoNoEncontradoException(id));
     }
 
     private Pedido buscarPedido(UUID id) {
         return pedidoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Pedido no encontrado: " + id));
+                .orElseThrow(() -> new PedidoNoEncontradoException(id));
     }
 }

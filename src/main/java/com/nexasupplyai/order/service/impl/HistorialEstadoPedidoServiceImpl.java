@@ -4,11 +4,12 @@ import com.nexasupplyai.order.dto.request.HistorialEstadoPedidoRequest;
 import com.nexasupplyai.order.dto.response.HistorialEstadoPedidoResponse;
 import com.nexasupplyai.order.entity.HistorialEstadoPedido;
 import com.nexasupplyai.order.entity.Pedido;
+import com.nexasupplyai.order.exception.HistorialEstadoPedidoNoEncontradoException;
+import com.nexasupplyai.order.exception.PedidoNoEncontradoException;
 import com.nexasupplyai.order.mapper.HistorialEstadoPedidoMapper;
 import com.nexasupplyai.order.repository.HistorialEstadoPedidoRepository;
 import com.nexasupplyai.order.repository.PedidoRepository;
 import com.nexasupplyai.order.service.interfaces.HistorialEstadoPedidoServiceInterface;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,11 +55,11 @@ public class HistorialEstadoPedidoServiceImpl implements HistorialEstadoPedidoSe
 
     private HistorialEstadoPedido buscarEntidad(UUID id) {
         return historialRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Historial de estado no encontrado: " + id));
+                .orElseThrow(() -> new HistorialEstadoPedidoNoEncontradoException(id));
     }
 
     private Pedido buscarPedido(UUID id) {
         return pedidoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Pedido no encontrado: " + id));
+                .orElseThrow(() -> new PedidoNoEncontradoException(id));
     }
 }
