@@ -14,7 +14,7 @@ public class InventoryServiceClient {
 
     public InventoryServiceClient(
             RestClient.Builder constructorCliente,
-            @Value("${clients.inventory-service.base-url}") String urlBaseInventoryService
+            @Value("${clients.inventory-service.base-url:http://localhost:8081}") String urlBaseInventoryService
     ) {
         this.clienteHttp = constructorCliente.baseUrl(urlBaseInventoryService).build();
     }

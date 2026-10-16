@@ -44,7 +44,7 @@ public class Pedido {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
-    private EstadoPedido estado = EstadoPedido.PENDIENTE;
+    private EstadoPedido estado = EstadoPedido.PENDING;
 
     @Column(name = "currency", nullable = false, length = 3)
     private String moneda = "PEN";

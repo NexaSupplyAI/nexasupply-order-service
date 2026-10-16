@@ -6,6 +6,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,6 +44,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ProblemDetail manejarIntegridad(DataIntegrityViolationException exception) {
         return problema(HttpStatus.CONFLICT, "La operación infringe una restricción de datos");
+    }
+
+    @ExceptionHandler(RestClientException.class)
+    ProblemDetail manejarDependenciaNoDisponible(RestClientException exception) {
+        return problema(HttpStatus.BAD_GATEWAY, "No fue posible consultar Inventory Service");
     }
 
     @ExceptionHandler(Exception.class)
