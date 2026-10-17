@@ -15,7 +15,6 @@ import jakarta.persistence.LockModeType;
 @Repository
 public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     Optional<Pedido> findByNumeroPedido(String numeroPedido);
-    boolean existsByNumeroPedido(String numeroPedido);
     List<Pedido> findAllByEstadoOrderBySolicitadoEnDesc(EstadoPedido estado);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
