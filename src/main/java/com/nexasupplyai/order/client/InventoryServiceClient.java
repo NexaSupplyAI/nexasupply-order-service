@@ -1,6 +1,8 @@
 package com.nexasupplyai.order.client;
 
 import com.nexasupplyai.order.dto.external.ProductoInventarioResponse;
+import com.nexasupplyai.order.dto.external.OperacionInventarioResponse;
+import com.nexasupplyai.order.dto.external.ReservaOrdenInventarioRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -24,5 +26,20 @@ public class InventoryServiceClient {
                 .uri("/api/v1/productos/{id}", idProducto)
                 .retrieve()
                 .body(ProductoInventarioResponse.class);
+    }
+
+    public OperacionInventarioResponse reservar(ReservaOrdenInventarioRequest request) {
+        return clienteHttp.post().uri("/api/v1/operaciones-inventario/reservas")
+                .body(request).retrieve().body(OperacionInventarioResponse.class);
+    }
+
+    public OperacionInventarioResponse consumir(UUID idOrden) {
+        return clienteHttp.post().uri("/api/v1/operaciones-inventario/ordenes/{id}/consumir", idOrden)
+                .retrieve().body(OperacionInventarioResponse.class);
+    }
+
+    public OperacionInventarioResponse liberar(UUID idOrden) {
+        return clienteHttp.post().uri("/api/v1/operaciones-inventario/ordenes/{id}/liberar", idOrden)
+                .retrieve().body(OperacionInventarioResponse.class);
     }
 }
