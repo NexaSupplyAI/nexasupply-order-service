@@ -19,12 +19,13 @@ Java 21, PostgreSQL 16+, Inventory Service y un emisor OpenID Connect.
 | `DB_URL` | No | `jdbc:postgresql://localhost:5432/nexasupplyai` |
 | `DB_USER` | No | `postgres` |
 | `DB_PASSWORD` | No | `postgres` |
-| `JWT_ISSUER_URI` | Sí | Sin valor |
+| `JWT_ISSUER_URI` | Producción | `http://localhost:9999` |
+| `JWT_JWK_SET_URI` | Producción | `http://localhost:9999/.well-known/jwks.json` |
+| `APP_SECURITY_ENABLED` | No | `true` |
 | `CORS_ALLOWED_ORIGINS` | No | `http://localhost:4200` |
 | `INVENTORY_SERVICE_URL` | No | `http://localhost:8081` |
-| `FLYWAY_ENABLED` | No | `false` |
 
-Inicializa la base con [`../nexasupplyai.sql`](../nexasupplyai.sql). Flyway está desactivado hasta dividir ese script en migraciones versionadas por servicio.
+Inicializa la base con [`../nexasupplyai.sql`](../nexasupplyai.sql). Hibernate valida el esquema al arrancar.
 
 ## Ejecución
 
@@ -56,6 +57,9 @@ docker run --rm --add-host=host.docker.internal:host-gateway \
 | `GET` | `/api/v1/ordenes?estado=PENDING` | Listar; el filtro es opcional |
 | `POST` | `/api/v1/ordenes` | Crear pedido |
 | `GET/PUT/DELETE` | `/api/v1/ordenes/{id}` | Operaciones por pedido |
+| `POST` | `/api/v1/ordenes/{id}/confirmar` | Reservar inventario y confirmar |
+| `POST` | `/api/v1/ordenes/{id}/completar` | Consumir reserva y completar |
+| `POST` | `/api/v1/ordenes/{id}/cancelar?motivo=...` | Liberar reserva y cancelar |
 | `GET` | `/api/v1/detalles-pedido?idPedido={uuid}` | Listar líneas |
 | `POST` | `/api/v1/detalles-pedido` | Crear línea y validar el producto |
 | `GET/PUT/DELETE` | `/api/v1/detalles-pedido/{id}` | Operaciones por línea |
@@ -74,6 +78,6 @@ El `montoTotal` debe ser exactamente `subtotal + montoImpuesto + montoEnvio - mo
 ./mvnw clean package
 ```
 
-## Alcance pendiente
+## Flujo empresarial
 
-Crear o confirmar un pedido todavía no llama a una operación de reserva de Inventory Service. Falta implementar un caso de uso transaccional/saga para validar stock, reservarlo, compensar errores y cambiar el estado del pedido. El CRUD actual no garantiza ese flujo empresarial completo.
+Un pedido nace `PENDING` y sus líneas solo son editables en ese estado. Confirmar reserva todas las líneas en Inventory Service; si falla la persistencia local se ejecuta la liberación compensatoria. Completar consume la reserva y cancelar la libera. Todas las transiciones generan historial e Inventory Service hace las llamadas reintentables e idempotentes.
