@@ -89,9 +89,13 @@ public class PedidoServiceImpl implements PedidoServiceInterface {
         try {
             cambiarEstado(pedido, EstadoPedido.CONFIRMED, actor, "Pedido confirmado y stock reservado");
             pedido.setConfirmadoEn(OffsetDateTime.now(ZoneOffset.UTC));
-            return pedidoMapper.aResponse(pedidoRepository.save(pedido));
+            return pedidoMapper.aResponse(pedidoRepository.saveAndFlush(pedido));
         } catch (RuntimeException ex) {
-            inventoryServiceClient.liberar(id);
+            try {
+                inventoryServiceClient.liberar(id);
+            } catch (RuntimeException compensationFailure) {
+                ex.addSuppressed(compensationFailure);
+            }
             throw ex;
         }
     }
@@ -107,7 +111,7 @@ public class PedidoServiceImpl implements PedidoServiceInterface {
         inventoryServiceClient.consumir(id);
         cambiarEstado(pedido, EstadoPedido.COMPLETED, actor, "Pedido completado; inventario descontado");
         pedido.setCompletadoEn(OffsetDateTime.now(ZoneOffset.UTC));
-        return pedidoMapper.aResponse(pedidoRepository.save(pedido));
+        return pedidoMapper.aResponse(pedidoRepository.saveAndFlush(pedido));
     }
 
     @Override
@@ -124,7 +128,7 @@ public class PedidoServiceImpl implements PedidoServiceInterface {
         cambiarEstado(pedido, EstadoPedido.CANCELLED, actor,
                 motivo == null || motivo.isBlank() ? "Pedido cancelado" : motivo);
         pedido.setCanceladoEn(OffsetDateTime.now(ZoneOffset.UTC));
-        return pedidoMapper.aResponse(pedidoRepository.save(pedido));
+        return pedidoMapper.aResponse(pedidoRepository.saveAndFlush(pedido));
     }
 
     @Transactional
