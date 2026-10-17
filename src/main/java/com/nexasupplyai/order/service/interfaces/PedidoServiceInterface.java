@@ -12,5 +12,8 @@ public interface PedidoServiceInterface {
     PedidoResponse obtenerPorId(UUID id);
     PedidoResponse crear(PedidoRequest request);
     PedidoResponse actualizar(UUID id, PedidoRequest request);
+    PedidoResponse confirmar(UUID id, String actor);
+    PedidoResponse completar(UUID id, String actor);
+    PedidoResponse cancelar(UUID id, String actor, String motivo);
     void eliminar(UUID id);
 }

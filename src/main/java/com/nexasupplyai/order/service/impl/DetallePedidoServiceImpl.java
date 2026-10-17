@@ -1,7 +1,9 @@
 package com.nexasupplyai.order.service.impl;
 
+import com.nexasupplyai.order.client.InventoryServiceClient;
 import com.nexasupplyai.order.dto.request.DetallePedidoRequest;
 import com.nexasupplyai.order.dto.response.DetallePedidoResponse;
+import com.nexasupplyai.order.dto.external.ProductoInventarioResponse;
 import com.nexasupplyai.order.entity.DetallePedido;
 import com.nexasupplyai.order.entity.Pedido;
 import com.nexasupplyai.order.exception.DetallePedidoNoEncontradoException;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -25,6 +28,7 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
     private final DetallePedidoRepository detallePedidoRepository;
     private final PedidoRepository pedidoRepository;
     private final DetallePedidoMapper detallePedidoMapper;
+    private final InventoryServiceClient inventoryServiceClient;
 
     public List<DetallePedidoResponse> listarPorPedido(UUID idPedido) {
         return detallePedidoRepository.findAllByPedidoId(idPedido).stream()
@@ -39,6 +43,7 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
     public DetallePedidoResponse crear(DetallePedidoRequest request) {
         validarImportes(request);
         Pedido pedido = buscarPedido(request.idPedido());
+        validarPedidoEditable(pedido);
         detallePedidoRepository.findByPedidoIdAndIdProducto(pedido.getId(), request.idProducto())
                 .ifPresent(detalle -> { throw new IllegalArgumentException("El producto ya existe en el pedido"); });
         return detallePedidoMapper.aResponse(
@@ -51,6 +56,7 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
         validarImportes(request);
         DetallePedido detalle = buscarEntidad(id);
         Pedido pedido = buscarPedido(request.idPedido());
+        validarPedidoEditable(pedido);
         detallePedidoRepository.findByPedidoIdAndIdProducto(pedido.getId(), request.idProducto())
                 .filter(existente -> !existente.getId().equals(id))
                 .ifPresent(existente -> { throw new IllegalArgumentException("El producto ya existe en el pedido"); });
@@ -60,13 +66,24 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
 
     @Transactional
     public void eliminar(UUID id) {
-        detallePedidoRepository.delete(buscarEntidad(id));
+        DetallePedido detalle = buscarEntidad(id);
+        validarPedidoEditable(detalle.getPedido());
+        detallePedidoRepository.delete(detalle);
     }
 
     private void validarImportes(DetallePedidoRequest request) {
         BigDecimal importeBruto = request.cantidad().multiply(request.precioUnitario());
         if (request.montoDescuento().compareTo(importeBruto) > 0) {
             throw new IllegalArgumentException("El descuento no puede superar el importe de la línea");
+        }
+
+        ProductoInventarioResponse producto = inventoryServiceClient.obtenerProducto(request.idProducto());
+        if (producto == null || !Boolean.TRUE.equals(producto.activo())) {
+            throw new IllegalArgumentException("El producto no existe o está inactivo");
+        }
+        if (!Objects.equals(producto.sku(), request.skuInstantanea())
+                || !Objects.equals(producto.nombre(), request.nombreProductoInstantanea())) {
+            throw new IllegalArgumentException("El SKU o nombre del producto no coincide con Inventory Service");
         }
     }
 
@@ -78,5 +95,11 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
     private Pedido buscarPedido(UUID id) {
         return pedidoRepository.findById(id)
                 .orElseThrow(() -> new PedidoNoEncontradoException(id));
+    }
+
+    private void validarPedidoEditable(Pedido pedido) {
+        if (pedido.getEstado() != com.nexasupplyai.order.enums.EstadoPedido.PENDING) {
+            throw new IllegalArgumentException("Los detalles solo pueden modificarse mientras el pedido está pendiente");
+        }
     }
 }

@@ -18,7 +18,7 @@ public interface PedidoMapper {
     @Mapping(target = "nombreCliente", source = "request.nombreCliente")
     @Mapping(target = "emailCliente", source = "request.emailCliente")
     @Mapping(target = "telefonoCliente", source = "request.telefonoCliente")
-    @Mapping(target = "estado", source = "request.estado", defaultValue = "PENDIENTE")
+    @Mapping(target = "estado", source = "request.estado", defaultValue = "PENDING")
     @Mapping(target = "moneda", source = "request.moneda")
     @Mapping(target = "subtotal", source = "request.subtotal")
     @Mapping(target = "montoImpuesto", source = "request.montoImpuesto")
