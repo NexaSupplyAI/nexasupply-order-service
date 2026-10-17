@@ -15,16 +15,16 @@ spring:
     properties:
       hibernate:
         default_schema: ordering
-  flyway:
-    enabled: ${FLYWAY_ENABLED:false}
-    schemas: ordering
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${JWT_ISSUER_URI}
+          issuer-uri: ${JWT_ISSUER_URI:http://localhost:9999}
+          jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:9999/.well-known/jwks.json}
 
 app:
+  security:
+    enabled: ${APP_SECURITY_ENABLED:true}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
