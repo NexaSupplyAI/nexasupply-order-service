@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/v1/ordenes")
@@ -39,9 +40,30 @@ public class PedidoController {
         return pedidoService.actualizar(id, request);
     }
 
+    @PostMapping("/{id}/confirmar")
+    public PedidoResponse confirmar(@PathVariable UUID id, Authentication authentication) {
+        return pedidoService.confirmar(id, actor(authentication));
+    }
+
+    @PostMapping("/{id}/completar")
+    public PedidoResponse completar(@PathVariable UUID id, Authentication authentication) {
+        return pedidoService.completar(id, actor(authentication));
+    }
+
+    @PostMapping("/{id}/cancelar")
+    public PedidoResponse cancelar(@PathVariable UUID id,
+                                    @RequestParam(required = false) String motivo,
+                                    Authentication authentication) {
+        return pedidoService.cancelar(id, actor(authentication), motivo);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable UUID id) {
         pedidoService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private String actor(Authentication authentication) {
+        return authentication == null ? "local-demo-user" : authentication.getName();
     }
 }
