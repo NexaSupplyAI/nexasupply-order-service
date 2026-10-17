@@ -43,6 +43,7 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
     public DetallePedidoResponse crear(DetallePedidoRequest request) {
         validarImportes(request);
         Pedido pedido = buscarPedido(request.idPedido());
+        validarPedidoEditable(pedido);
         detallePedidoRepository.findByPedidoIdAndIdProducto(pedido.getId(), request.idProducto())
                 .ifPresent(detalle -> { throw new IllegalArgumentException("El producto ya existe en el pedido"); });
         return detallePedidoMapper.aResponse(
@@ -55,6 +56,7 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
         validarImportes(request);
         DetallePedido detalle = buscarEntidad(id);
         Pedido pedido = buscarPedido(request.idPedido());
+        validarPedidoEditable(pedido);
         detallePedidoRepository.findByPedidoIdAndIdProducto(pedido.getId(), request.idProducto())
                 .filter(existente -> !existente.getId().equals(id))
                 .ifPresent(existente -> { throw new IllegalArgumentException("El producto ya existe en el pedido"); });
@@ -64,7 +66,9 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
 
     @Transactional
     public void eliminar(UUID id) {
-        detallePedidoRepository.delete(buscarEntidad(id));
+        DetallePedido detalle = buscarEntidad(id);
+        validarPedidoEditable(detalle.getPedido());
+        detallePedidoRepository.delete(detalle);
     }
 
     private void validarImportes(DetallePedidoRequest request) {
@@ -91,5 +95,11 @@ public class DetallePedidoServiceImpl implements DetallePedidoServiceInterface {
     private Pedido buscarPedido(UUID id) {
         return pedidoRepository.findById(id)
                 .orElseThrow(() -> new PedidoNoEncontradoException(id));
+    }
+
+    private void validarPedidoEditable(Pedido pedido) {
+        if (pedido.getEstado() != com.nexasupplyai.order.enums.EstadoPedido.PENDING) {
+            throw new IllegalArgumentException("Los detalles solo pueden modificarse mientras el pedido está pendiente");
+        }
     }
 }
