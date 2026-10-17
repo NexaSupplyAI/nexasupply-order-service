@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -37,7 +37,7 @@ class PedidoServiceImplTest {
         detalle.setIdProducto(UUID.randomUUID()); detalle.setCantidad(new BigDecimal("2"));
         when(pedidos.bloquearPorId(id)).thenReturn(Optional.of(pedido));
         when(detalles.findAllByPedidoId(id)).thenReturn(List.of(detalle));
-        when(pedidos.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(pedidos.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
         var servicio = new PedidoServiceImpl(pedidos, mapper, detalles, historial, inventario);
 
         servicio.confirmar(id, "usuario-prueba");
@@ -45,5 +45,37 @@ class PedidoServiceImplTest {
         assertEquals(EstadoPedido.CONFIRMED, pedido.getEstado());
         verify(inventario).reservar(any());
         verify(historial).save(any());
+    }
+
+    @Test
+    void cancelarPedidoConfirmadoLiberaInventario() {
+        UUID id = UUID.randomUUID();
+        Pedido pedido = new Pedido(); pedido.setId(id); pedido.setEstado(EstadoPedido.CONFIRMED);
+        when(pedidos.bloquearPorId(id)).thenReturn(Optional.of(pedido));
+        when(pedidos.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
+        var servicio = new PedidoServiceImpl(pedidos, mapper, detalles, historial, inventario);
+
+        servicio.cancelar(id, "usuario-prueba", "cliente solicitó cancelación");
+
+        assertEquals(EstadoPedido.CANCELLED, pedido.getEstado());
+        verify(inventario).liberar(id);
+        verify(historial).save(any());
+    }
+
+    @Test
+    void confirmarCompensaReservaSiPersistenciaFalla() {
+        UUID id = UUID.randomUUID();
+        Pedido pedido = new Pedido(); pedido.setId(id); pedido.setEstado(EstadoPedido.PENDING);
+        DetallePedido detalle = new DetallePedido(); detalle.setPedido(pedido); detalle.setIdAlmacen(UUID.randomUUID());
+        detalle.setIdProducto(UUID.randomUUID()); detalle.setCantidad(BigDecimal.ONE);
+        when(pedidos.bloquearPorId(id)).thenReturn(Optional.of(pedido));
+        when(detalles.findAllByPedidoId(id)).thenReturn(List.of(detalle));
+        when(pedidos.saveAndFlush(any())).thenThrow(new RuntimeException("fallo de persistencia"));
+        var servicio = new PedidoServiceImpl(pedidos, mapper, detalles, historial, inventario);
+
+        assertThrows(RuntimeException.class, () -> servicio.confirmar(id, "usuario-prueba"));
+
+        verify(inventario).reservar(any());
+        verify(inventario).liberar(id);
     }
 }
