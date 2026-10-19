@@ -17,6 +17,11 @@ spring:
 app:
   security:
     enabled: ${APP_SECURITY_ENABLED:false}
+    internal-jwt:
+      enabled: ${INTERNAL_JWT_ENABLED:false}
+      secret: ${INTERNAL_JWT_SECRET:}
+      issuer: ${INTERNAL_JWT_ISSUER:nexasupply-portal}
+      audience: ${INTERNAL_JWT_AUDIENCE:nexasupply-internal-api}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
